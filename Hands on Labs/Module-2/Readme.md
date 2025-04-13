@@ -47,105 +47,8 @@ The Docker daemon configuration file location varies by platform:
 - **Windows Server**: `C:\ProgramData\docker\config\daemon.json`
 - **Docker Desktop**: Settings/Preferences -> Docker Engine
 
-Create a basic configuration file:
-
-```bash
-# Linux
-sudo tee /etc/docker/daemon.json <<EOF
-{
-  "data-root": "/var/lib/docker",
-  "storage-driver": "overlay2",
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}
-EOF
-
-# Apply changes
-sudo systemctl restart docker
-```
-
-```powershell
-# Windows Server
-New-Item -Path "C:\ProgramData\docker\config\daemon.json" -Force -Value @"
-{
-  "data-root": "C:\\ProgramData\\docker\\data",
-  "storage-driver": "windowsfilter",
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}
-"@
-
-# Apply changes
-Restart-Service Docker
-```
-
-### Storage Driver Configuration
-
-Select the appropriate storage driver for your environment:
-
-| Driver | Platform | Notes |
-|--------|----------|-------|
-| overlay2 | Linux (modern) | Recommended for most Linux distributions |
-| devicemapper | Linux (older) | Use direct-lvm mode for production |
-| btrfs | Linux w/Btrfs | Good for high I/O, requires Btrfs filesystem |
-| zfs | Linux w/ZFS | Good for high I/O, requires ZFS filesystem |
-| windowsfilter | Windows | Default for Windows containers |
-
-Example overlay2 configuration:
-```json
-{
-  "storage-driver": "overlay2",
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ]
-}
-```
-
-Example devicemapper configuration (direct-lvm):
-```json
-{
-  "storage-driver": "devicemapper",
-  "storage-opts": [
-    "dm.directlvm_device=/dev/xvdf",
-    "dm.thinp_percent=95",
-    "dm.thinp_metapercent=1",
-    "dm.thinp_autoextend_threshold=80",
-    "dm.thinp_autoextend_percent=20",
-    "dm.directlvm_device_force=false"
-  ]
-}
-```
-
-### Logging Configuration
-
-Configure logging for containers:
-
-```json
-{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3",
-    "labels": "production_status",
-    "env": "os,customer"
-  }
-}
-```
-
-Alternative log drivers:
-- `syslog`: Logs to syslog
-- `journald`: Logs to journald
-- `fluentd`: Logs to fluentd
-- `splunk`: Logs to splunk
-- `awslogs`: Logs to Amazon CloudWatch
-
 ## Registry Configuration
+![configuration](https://stackoverflow.com/questions/38247362/how-i-can-use-docker-registry-with-login-password)
 
 ### Private Registry Authentication
 
@@ -219,31 +122,6 @@ Configure default resource limits for containers:
   }
 }
 ```
-
-### Linux Kernel Parameters
-
-For high-performance Docker environments, adjust these sysctl settings:
-
-```bash
-# Create a sysctl configuration file
-sudo tee /etc/sysctl.d/99-docker.conf <<EOF
-# Network settings
-net.ipv4.ip_forward = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-
-# File descriptor limits
-fs.file-max = 1000000
-
-# Memory settings
-vm.max_map_count = 262144
-vm.swappiness = 1
-EOF
-
-# Apply settings
-sudo sysctl -p /etc/sysctl.d/99-docker.conf
-```
-
 ### CPU and Memory Allocation (Docker Desktop)
 
 For Docker Desktop, allocate resources through the UI:
@@ -277,53 +155,6 @@ docker info
 Run a test container:
 ```bash
 docker run hello-world
-```
-
-### Advanced Verification
-
-Check system-wide information:
-```bash
-docker system info
-```
-
-Verify Docker API works:
-```bash
-curl --unix-socket /var/run/docker.sock http://localhost/version
-```
-
-Monitor Docker daemon status:
-```bash
-# Linux
-sudo systemctl status docker
-
-# Windows
-Get-Service Docker
-```
-
-Verify networking:
-```bash
-docker network ls
-docker run --rm alpine ping -c 4 google.com
-```
-
-### Docker Components Verification
-
-Verify Docker Compose installation:
-```bash
-docker compose version
-```
-
-Test container runtime:
-```bash
-# Create a persistent volume
-docker volume create test-volume
-
-# Create and access a container with the volume
-docker run -it --rm -v test-volume:/data alpine sh -c "echo 'It works!' > /data/test.txt"
-docker run -it --rm -v test-volume:/data alpine cat /data/test.txt
-
-# Clean up
-docker volume rm test-volume
 ```
 
 ## Troubleshooting Guide
@@ -386,28 +217,6 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 ```
 
-### Log Analysis
-
-#### Docker Daemon Logs
-
-```bash
-# Linux
-sudo journalctl -u docker.service --since "1 hour ago"
-
-# Windows
-Get-EventLog -LogName Application -Source Docker -After (Get-Date).AddHours(-1)
-```
-
-#### Container Logs
-
-```bash
-# View logs for a container
-docker logs <container_id>
-
-# Follow logs in real-time
-docker logs -f <container_id>
-```
-
 ### Restart Procedures
 
 ```bash
@@ -421,82 +230,8 @@ Restart-Service Docker
 ## Security Configuration
 
 ### Rootless Mode
+![configuration](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
 
-Run Docker daemon as a non-root user:
-
-```bash
-# Install dependencies
-sudo apt-get install -y uidmap
-
-# Install Docker in rootless mode
-curl -fsSL https://get.docker.com/rootless | sh
-
-# Add to shell configuration
-echo "export PATH=/home/$USER/bin:$PATH" >> ~/.bashrc
-echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >> ~/.bashrc
-source ~/.bashrc
-```
-
-### TLS Configuration
-
-Secure Docker daemon with TLS:
-
-1. Create certificates:
-```bash
-# Create a directory for certificates
-mkdir -p ~/.docker/certs
-
-# Generate CA key and certificate
-openssl genrsa -out ~/.docker/certs/ca-key.pem 4096
-openssl req -new -x509 -days 365 -key ~/.docker/certs/ca-key.pem -sha256 -out ~/.docker/certs/ca.pem
-
-# Create server key and CSR
-openssl genrsa -out ~/.docker/certs/server-key.pem 4096
-openssl req -subj "/CN=docker-server" -sha256 -new -key ~/.docker/certs/server-key.pem -out ~/.docker/certs/server.csr
-
-# Sign server certificate
-openssl x509 -req -days 365 -sha256 -in ~/.docker/certs/server.csr -CA ~/.docker/certs/ca.pem -CAkey ~/.docker/certs/ca-key.pem -CAcreateserial -out ~/.docker/certs/server-cert.pem
-
-# Create client key and CSR
-openssl genrsa -out ~/.docker/certs/client-key.pem 4096
-openssl req -subj "/CN=docker-client" -new -key ~/.docker/certs/client-key.pem -out ~/.docker/certs/client.csr
-
-# Sign client certificate
-openssl x509 -req -days 365 -sha256 -in ~/.docker/certs/client.csr -CA ~/.docker/certs/ca.pem -CAkey ~/.docker/certs/ca-key.pem -CAcreateserial -out ~/.docker/certs/client-cert.pem
-```
-
-2. Configure Docker daemon:
-```json
-{
-  "tls": true,
-  "tlscacert": "/etc/docker/certs/ca.pem",
-  "tlscert": "/etc/docker/certs/server-cert.pem",
-  "tlskey": "/etc/docker/certs/server-key.pem",
-  "tlsverify": true
-}
-```
-
-3. Use client with TLS:
-```bash
-docker --tlsverify \
-  --tlscacert=~/.docker/certs/ca.pem \
-  --tlscert=~/.docker/certs/client-cert.pem \
-  --tlskey=~/.docker/certs/client-key.pem \
-  -H tcp://docker-server:2376 \
-  version
-```
-
-### Content Trust
-
-Enable Docker Content Trust for image verification:
-
-```bash
-# Enable Docker Content Trust
-export DOCKER_CONTENT_TRUST=1
-
-# Pull signed images
-docker pull docker/trusttest:latest
-```
 
 ## Hands-On Exercises
 
