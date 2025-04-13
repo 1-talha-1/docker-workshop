@@ -48,7 +48,7 @@ The Docker daemon configuration file location varies by platform:
 - **Docker Desktop**: Settings/Preferences -> Docker Engine
 
 ## Registry Configuration
-![configuration](https://stackoverflow.com/questions/38247362/how-i-can-use-docker-registry-with-login-password)
+- [configuration](https://stackoverflow.com/questions/38247362/how-i-can-use-docker-registry-with-login-password/)
 
 ### Private Registry Authentication
 
@@ -197,26 +197,6 @@ sudo tee /etc/docker/daemon.json <<EOF
 }
 EOF
 ```
-
-#### Registry Connectivity Issues
-
-```bash
-# Test registry connectivity
-curl -v https://registry-1.docker.io/v2/
-
-# Configure proxy if needed
-sudo mkdir -p /etc/systemd/system/docker.service.d
-sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf <<EOF
-[Service]
-Environment="HTTP_PROXY=http://proxy.example.com:8080"
-Environment="HTTPS_PROXY=http://proxy.example.com:8080"
-Environment="NO_PROXY=localhost,127.0.0.1,docker-registry.example.com,.corp"
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl restart docker
-```
-
 ### Restart Procedures
 
 ```bash
@@ -230,7 +210,7 @@ Restart-Service Docker
 ## Security Configuration
 
 ### Rootless Mode
-![configuration](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
+- [configuration](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
 
 
 ## Hands-On Exercises
