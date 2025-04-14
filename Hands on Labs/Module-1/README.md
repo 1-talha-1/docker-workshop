@@ -93,14 +93,14 @@ cat > test-workload.sh << 'EOF'
 #!/bin/bash
 echo "Starting CPU test..."
 start_time=$(date +%s.%N)
-for i in {1..1000}; do
+for i in {1..100}; do
   echo "Iteration $i"
-  for j in {1..10000}; do
+  for j in {1..10}; do
     echo $j | md5sum > /dev/null
   done
 done
 end_time=$(date +%s.%N)
-execution_time=$(echo "$end_time - $start_time" | bc)
+execution_time=$(perl -e "print $end_time - $start_time")
 echo "CPU test completed in $execution_time seconds"
 
 echo "Starting I/O test..."
@@ -111,7 +111,7 @@ for i in {1..5}; do
   rm test.file
 done
 end_time=$(date +%s.%N)
-execution_time=$(echo "$end_time - $start_time" | bc)
+execution_time=$(perl -e "print $end_time - $start_time")
 echo "I/O test completed in $execution_time seconds"
 EOF
 
