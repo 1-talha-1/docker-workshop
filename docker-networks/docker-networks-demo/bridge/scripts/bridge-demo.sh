@@ -9,11 +9,8 @@ echo -e "${BLUE}=== Bridge Network Demonstration ===${NC}"
 
 # Create custom bridge network with specific subnet
 echo -e "${BLUE}Creating a custom bridge network...${NC}"
-docker network create --driver bridge \
-  --subnet=172.20.0.0/16 \
-  --gateway=172.20.0.1 \
-  --opt "com.docker.network.bridge.name"="docker_demo_bridge" \
-  demo-bridge
+
+docker network create --driver bridge --subnet=10.10.0.0/16 --gateway=10.10.0.1 --opt "com.docker.network.bridge.name"="docker_demo_bridge" demo-bridge
 
 # Launch containers
 echo -e "${BLUE}Starting web service containers on the bridge network...${NC}"
